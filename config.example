@@ -1,0 +1,34 @@
+# thlmulti config. Lives at ~/.config/thlmulti/config.
+# One "name = value" per line. # starts a comment. Every line is optional.
+# A name thlmulti does not know is an error, so a typo does not go quiet.
+
+# Shell to run in every tab. First word is the program, the rest are flags.
+shell = /bin/zsh --login
+
+# Keys. Write them like ctrl+alt+v. Modifiers: ctrl, alt, shift, super.
+# Say "none" to switch a binding off.
+new_tab   = ctrl+t
+close_tab = ctrl+shift+w
+paste     = ctrl+alt+v
+
+# Modifiers for tab-by-number. ctrl+1 .. ctrl+9, and ctrl+0 for the tenth.
+# At least one modifier is required, or you could not type a digit.
+tab_mods = ctrl
+
+# Lines of history each tab keeps. 0 keeps none.
+# Cost is about scrollback * columns * 88 bytes per tab.
+scrollback = 2000
+
+# Tab bar colours. auto asks the terminal whether it is dark or light.
+theme = auto
+
+# Pin any part of the bar. Values: default, a colour name (red, bright-black,
+# ...), a palette index 0-255, or #rrggbb. Anything left out follows the theme.
+# tab_fg    = bright-black
+# tab_bg    = default
+# active_fg = black
+# active_bg = white
+# toast_fg  = black
+# toast_bg  = cyan
+# error_fg  = bright-white
+# error_bg  = red

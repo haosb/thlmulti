@@ -1,0 +1,82 @@
+# Taskfile for thlmulti. Install go-task: https://taskfile.dev
+version: "3"
+
+vars:
+  BIN: thlmulti
+  PREFIX: '{{.PREFIX | default (printf "%s/.local" .HOME)}}'
+  CONFIG_DIR: '{{.XDG_CONFIG_HOME | default (printf "%s/.config" .HOME)}}/thlmulti'
+
+tasks:
+  default:
+    desc: List the tasks
+    silent: true
+    cmds:
+      - task --list
+
+  build:
+    desc: Build ./thlmulti
+    sources: ["*.go", "go.mod", "go.sum"]
+    generates: ["{{.BIN}}"]
+    cmds:
+      - go build -trimpath -ldflags "-s -w" -o {{.BIN}} .
+
+  run:
+    desc: Build and run it in this terminal
+    deps: [build]
+    cmds:
+      - ./{{.BIN}}
+
+  test:
+    desc: Run the tests
+    cmds:
+      - go test ./...
+
+  check:
+    desc: Format, vet and test
+    cmds:
+      - gofmt -l .
+      - go vet ./...
+      - go test ./...
+
+  tidy:
+    desc: Tidy go.mod
+    cmds:
+      - go mod tidy
+
+  install:
+    desc: Install to $PREFIX/bin (default ~/.local/bin)
+    deps: [build]
+    cmds:
+      - install -Dm755 {{.BIN}} {{.PREFIX}}/bin/{{.BIN}}
+      - echo "installed {{.PREFIX}}/bin/{{.BIN}}"
+
+  uninstall:
+    desc: Remove the installed binary
+    cmds:
+      - rm -f {{.PREFIX}}/bin/{{.BIN}}
+
+  config:
+    desc: Write a starter config, keeping one that already exists
+    status:
+      - test -f {{.CONFIG_DIR}}/config
+    cmds:
+      - mkdir -p {{.CONFIG_DIR}}
+      - cp config.example {{.CONFIG_DIR}}/config
+      - echo "wrote {{.CONFIG_DIR}}/config"
+
+  alacritty:
+    desc: Print the Alacritty config to paste in
+    silent: true
+    cmds:
+      - |
+        echo "# Put this in ~/.config/alacritty/alacritty.toml."
+        echo "# Back the file up first. Move any shell flags into the thlmulti config."
+        echo
+        echo "[terminal.shell]"
+        echo 'program = "{{.PREFIX}}/bin/{{.BIN}}"'
+        echo "args = []"
+
+  clean:
+    desc: Delete the built binary
+    cmds:
+      - rm -f {{.BIN}}
