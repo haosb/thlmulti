@@ -16,6 +16,9 @@ import (
 //
 // which at the library's own default of 10000 lines and a wide window is a few
 // hundred megabytes per tab. That is the entire reason this knob exists.
+//
+// The history a tab is holding is only half of what the process costs, though.
+// See memory.go for the other half, which is the half that can be given back.
 const bytesPerCell = 88
 
 // setScrollback caps how many lines of history a tab keeps.
