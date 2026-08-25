@@ -123,16 +123,40 @@ func run(cfg Config) error {
 	}
 	a.draw()
 
-	for ev := range vx.Events() {
+	events := vx.Events()
+	lastDraw := time.Now()
+	for ev := range events {
 		if !a.handle(ev) {
 			return nil
 		}
-		if a.dirty {
-			a.draw()
-			a.dirty = false
+		if !shouldDraw(a.dirty, len(events), time.Since(lastDraw)) {
+			continue
 		}
+		a.draw()
+		a.dirty = false
+		lastDraw = time.Now()
 	}
 	return nil
+}
+
+// drawDeadline is the longest a repaint is put off while events keep arriving.
+// A sixtieth of a second: short enough that a command streaming output still
+// looks live, long enough that a burst coalesces into a few frames.
+const drawDeadline = 16 * time.Millisecond
+
+// shouldDraw reports whether to repaint now, given how many events are already
+// waiting and how long it has been since the last repaint.
+//
+// Drawing costs far more than handling an event does: the whole screen is
+// rendered and pushed to the host terminal, tens of kilobytes at a time. A
+// bracketed paste arrives as one key event per character, so repainting on
+// every event turns a 200-line paste into thousands of full repaints and locks
+// the window up for seconds. Holding the paint back while events are still
+// queued collapses that burst into a handful of frames, and the deadline keeps
+// a stream that never lets up — a build log, a tail -f — from starving the
+// screen of repaints entirely.
+func shouldDraw(dirty bool, queued int, since time.Duration) bool {
+	return dirty && (queued == 0 || since >= drawDeadline)
 }
 
 // queryBackground asks the host what colour it is painted and hands the answer
