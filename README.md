@@ -2,6 +2,8 @@
 
 Tabs for your terminal. Not tmux. Not zellij. ~1700 lines of Go.
 
+![Three tabs, switching by number and by mouse, and a selection copied to the clipboard](docs/demo.gif)
+
 Mac Alacritty does `Ctrl+T` — new tab, same window. Linux Alacritty does not.
 Zellij does, but zellij is a whole world, and its mouse wheel stops scrolling
 the moment you click. So: four features, nothing else.
@@ -173,6 +175,8 @@ scrollback.go   the history limit
 clipboard.go    reading the clipboard (wl-paste, xclip)
 cwd.go          the shell's folder, from /proc, for a new tab
 terminfo.go     picking a TERM that has terminfo behind it
+demo/           records docs/demo.gif; a module of its own, so a font
+                rasteriser is not a dependency of the terminal
 ```
 
 ## Tests
