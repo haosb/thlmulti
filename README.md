@@ -96,18 +96,34 @@ scrollback = 2000
 
 Lines of history per tab; `0` keeps none.
 
-History is stored as whole rows at full width, so it is not cheap. Measured on
+History is stored as whole rows at full width — 88 bytes a cell, trailing
+blanks included — so a line costs `columns * 88` bytes whatever is printed on
+it. That is 17 KB a line at 200 columns, and it is per tab. Nothing out here can
+change it: it is the emulator's own data structure.
+
+What can be changed is everything the history has already been. Pushing lines
+through a history that is full allocates several times what it holds, and Go
+hangs on to what it drops, ready for the next burst. thlmulti hands that back
+once nothing has happened for five seconds — collecting a big heap costs tens of
+milliseconds, so it waits for a moment when nobody is waiting on it. Measured on
 one tab, 200 columns, 60000 lines pushed through it:
 
-| `scrollback` | RSS |
-|---|---|
-| `0` | 14 MB |
-| `2000` (default) | 95 MB |
-| `20000` | 1082 MB |
+| `scrollback` | RSS during the flood | once it goes quiet | history alone |
+|---|---|---|---|
+| `0` | 15 MB | 12 MB | 0 MB |
+| `2000` (default) | 105 MB | 62 MB | 34 MB |
+| `20000` | 1013 MB | 397 MB | 336 MB |
 
-Ten tabs at 20000 is not a thing you can have. The emulator's own default was
-10000; this is 2000, same as tmux. Raise it if you need it — now you know the
-price.
+`go test -run Reclaim -v .` prints that table on your machine.
+
+The middle column is a peak, not a resting state, and the right-hand one is the
+floor: history you asked to keep, and it is not going anywhere while you can
+still scroll to it. A wider window pays more for the same line count — 20000
+lines is 134 MB at 80 columns and 503 MB at 300.
+
+Ten tabs at 20000 is still not a thing you can have. The emulator's own default
+was 10000; this is 2000, same as tmux. Raise it if you need it — now you know
+the price.
 
 ### Colours
 

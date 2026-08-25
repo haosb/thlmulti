@@ -70,6 +70,9 @@ type app struct {
 	toast    string
 	toastGen int
 	dirty    bool
+	// mem hands the memory the scrollback churned through back to the
+	// operating system, once nothing is happening. See memory.go.
+	mem *reclaimer
 }
 
 // backgroundColor carries the host terminal's background colour back to the
@@ -109,7 +112,7 @@ func run(cfg Config) error {
 	}
 	defer vx.Close()
 
-	a := &app{vx: vx, cfg: cfg, term: childTERM(), mode: cfg.Theme}
+	a := &app{vx: vx, cfg: cfg, term: childTERM(), mode: cfg.Theme, mem: newReclaimer(vx)}
 	if a.mode == ThemeAuto {
 		// Dark until the host says otherwise: it is what almost every terminal
 		// is, and it is what we fall back to if the host will not answer.
@@ -265,6 +268,15 @@ func nextActive(active, removed, remaining int) int {
 
 // handle processes one event and reports whether to keep running.
 func (a *app) handle(ev vaxis.Event) bool {
+	// The reclaim is the one event that is not activity: counting it as such
+	// would keep the terminal awake forever, checking a heap nothing is
+	// touching. Everything else, from a keystroke to a line of output, is.
+	if _, ok := ev.(reclaimMemory); ok {
+		a.mem.fire()
+		return true
+	}
+	a.mem.note()
+
 	switch ev := ev.(type) {
 	case tabEvent:
 		return a.handleTabEvent(ev)
