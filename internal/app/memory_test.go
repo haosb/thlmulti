@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"go.rockorager.dev/vaxis/widgets/term"
+
+	"github.com/haosb/thlmulti/internal/scrollback"
 )
 
 // fakeReclaimer is a reclaimer with the clock and the heap taken away from it,
@@ -22,9 +24,9 @@ type fakeReclaimer struct {
 
 func newFakeReclaimer(churn *uint64) *fakeReclaimer {
 	f := &fakeReclaimer{reclaimer: &reclaimer{}}
-	f.reclaimer.arm = func() { f.arms += 1 }
-	f.reclaimer.churn = func() uint64 { return *churn }
-	f.reclaimer.free = func() { f.frees += 1 }
+	f.arm = func() { f.arms++ }
+	f.churn = func() uint64 { return *churn }
+	f.free = func() { f.frees++ }
 	return f
 }
 
@@ -106,10 +108,14 @@ func TestReclaimEventIsNotActivity(t *testing.T) {
 	a.handle(reclaimMemory{})
 	a.handle(reclaimMemory{})
 	a.handle(reclaimMemory{})
+	// The poll that reads the tabs' state runs every second for as long as the
+	// window is open. If it counted, the terminal would never be quiet.
+	a.handle(tick{})
+	a.handle(tick{})
 	if f.arms != 2 {
-		t.Errorf("reclaims armed the timer %d times: an idle terminal would never settle", f.arms)
+		t.Errorf("reclaims and polls armed the timer %d times: an idle terminal would never settle", f.arms)
 	}
-	if f.reclaimer.armed {
+	if f.armed {
 		t.Error("still armed with nothing to do")
 	}
 }
@@ -143,7 +149,7 @@ func floodHistory(t *testing.T, limit int, cols int) *term.Model {
 	t.Helper()
 	vt := term.New()
 	vt.Resize(cols, 50)
-	if err := setScrollback(vt, limit); err != nil {
+	if err := scrollback.Set(vt, limit); err != nil {
 		t.Fatal(err)
 	}
 	line := strings.Repeat("x", 39)
@@ -160,6 +166,11 @@ func TestReclaimHandsHistoryBackToTheOS(t *testing.T) {
 	if testing.Short() {
 		t.Skip("allocates a gigabyte and collects it")
 	}
+	if raceEnabled {
+		// The race detector keeps shadow memory of its own, several times the
+		// heap, so resident memory says nothing about what the reclaim did.
+		t.Skip("RSS is meaningless under the race detector")
+	}
 	const cols = 200
 	for _, limit := range []int{0, 2000, 20000} {
 		vt := floodHistory(t, limit, cols)
@@ -171,12 +182,12 @@ func TestReclaimHandsHistoryBackToTheOS(t *testing.T) {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 		live := float64(m.HeapAlloc) / (1 << 20)
-		history := float64(limit*cols*bytesPerCell) / (1 << 20)
+		history := float64(limit*cols*scrollback.BytesPerCell) / (1 << 20)
 		t.Logf("scrollback=%5d: RSS %4.0f MB -> %4.0f MB after the reclaim (live heap %4.0f MB, of which history %4.0f MB)",
 			limit, before, after, live, history)
 
-		switch {
-		case limit == 0:
+		switch limit {
+		case 0:
 			if after > 32 {
 				t.Errorf("no history at all still costs %.0f MB", after)
 			}
@@ -188,7 +199,7 @@ func TestReclaimHandsHistoryBackToTheOS(t *testing.T) {
 			}
 			if after < history {
 				t.Errorf("scrollback=%d: %.0f MB resident is less than the %.0f MB of history being held; "+
-					"bytesPerCell or the emulator's history has changed", limit, after, history)
+					"scrollback.BytesPerCell or the emulator's history has changed", limit, after, history)
 			}
 		}
 		runtime.KeepAlive(vt)

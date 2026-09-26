@@ -1,14 +1,10 @@
 package main
 
 import (
-	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"go.rockorager.dev/vaxis"
 	"go.rockorager.dev/vaxis/widgets/term"
 )
 
@@ -23,32 +19,7 @@ func TestResizeRepaintsAtTheNewSize(t *testing.T) {
 	if testing.Short() {
 		t.Skip("builds and runs the binary under a pty")
 	}
-
-	dir := t.TempDir()
-	bin := filepath.Join(dir, "thlmulti")
-	build := exec.Command("go", "build", "-o", bin, ".")
-	if out, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build: %v\n%s", err, out)
-	}
-
-	// A config of our own, so the test does not depend on the user's shell.
-	cfgDir := filepath.Join(dir, "config", "thlmulti")
-	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(cfgDir, "config"), []byte("shell = /bin/sh\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	host := term.New()
-	host.TERM = "xterm-256color"
-	host.Attach(func(vaxis.Event) {})
-	cmd := exec.Command(bin)
-	cmd.Env = append(os.Environ(), "XDG_CONFIG_HOME="+filepath.Join(dir, "config"))
-	if err := host.StartWithSize(cmd, 80, 12); err != nil {
-		t.Fatal(err)
-	}
-	defer host.Close()
+	host := startBinary(t, 80, 12)
 
 	if got := ruleWidth(t, host, 80); got != 80 {
 		t.Fatalf("at startup the rule spans %d columns, want 80", got)

@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"testing"
@@ -56,18 +56,18 @@ func TestParseThemeMode(t *testing.T) {
 }
 
 func TestModeForBackground(t *testing.T) {
-	if mode, ok := modeForBackground(vaxis.RGBColor(0x1d, 0x20, 0x21)); !ok || mode != ThemeDark {
+	if mode, ok := ModeForBackground(vaxis.RGBColor(0x1d, 0x20, 0x21)); !ok || mode != ThemeDark {
 		t.Errorf("a near-black background = %v, %v; want dark", mode, ok)
 	}
-	if mode, ok := modeForBackground(vaxis.RGBColor(0xfb, 0xf1, 0xc7)); !ok || mode != ThemeLight {
+	if mode, ok := ModeForBackground(vaxis.RGBColor(0xfb, 0xf1, 0xc7)); !ok || mode != ThemeLight {
 		t.Errorf("a cream background = %v, %v; want light", mode, ok)
 	}
 	// What a terminal that will not answer the query looks like. Guessing from
 	// it would flip the bar to the wrong palette for no reason.
-	if _, ok := modeForBackground(vaxis.ColorDefault); ok {
+	if _, ok := ModeForBackground(vaxis.ColorDefault); ok {
 		t.Error("no answer should not resolve to a theme")
 	}
-	if _, ok := modeForBackground(vaxis.IndexColor(4)); ok {
+	if _, ok := ModeForBackground(vaxis.IndexColor(4)); ok {
 		t.Error("a palette index says nothing about brightness")
 	}
 }
@@ -77,7 +77,7 @@ func TestModeForBackground(t *testing.T) {
 func TestThemeOverridesOneSlot(t *testing.T) {
 	cfg := Config{Colors: map[string]vaxis.Color{"active_bg": vaxis.RGBColor(1, 2, 3)}}
 
-	dark := cfg.theme(ThemeDark)
+	dark := cfg.Palette(ThemeDark)
 	if dark.ActiveBg != vaxis.RGBColor(1, 2, 3) {
 		t.Errorf("ActiveBg = %v, want the override", dark.ActiveBg)
 	}
@@ -85,7 +85,7 @@ func TestThemeOverridesOneSlot(t *testing.T) {
 		t.Error("an override leaked into the slots it did not name")
 	}
 
-	if light := cfg.theme(ThemeLight); light.ActiveBg != vaxis.RGBColor(1, 2, 3) {
+	if light := cfg.Palette(ThemeLight); light.ActiveBg != vaxis.RGBColor(1, 2, 3) {
 		t.Error("the override did not survive the light palette")
 	} else if light.ActiveFg != lightTheme().ActiveFg {
 		t.Error("the light palette was not used for the slots left alone")

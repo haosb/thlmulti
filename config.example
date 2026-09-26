@@ -5,11 +5,19 @@
 # Shell to run in every tab. First word is the program, the rest are flags.
 shell = /bin/zsh --login
 
-# Keys. Write them like ctrl+alt+v. Modifiers: ctrl, alt, shift, super.
+# Keys. Write them like ctrl+alt+v. Modifiers: ctrl, alt, shift, super. The key
+# is a character or a name: tab, enter, esc, space, backspace, up, down, left,
+# right, pgup, pgdown, home, end, insert, delete, f1..f12.
 # Say "none" to switch a binding off.
-new_tab   = ctrl+t
-close_tab = ctrl+shift+w
-paste     = ctrl+alt+v
+new_tab       = ctrl+t
+close_tab     = ctrl+shift+w
+paste         = ctrl+alt+v
+next_tab      = ctrl+tab
+prev_tab      = ctrl+shift+tab
+attention_tab = ctrl+shift+a
+move_left     = ctrl+shift+pgup
+move_right    = ctrl+shift+pgdown
+rename_tab    = ctrl+shift+r
 
 # Modifiers for tab-by-number. ctrl+1 .. ctrl+9, and ctrl+0 for the tenth.
 # At least one modifier is required, or you could not type a digit.
@@ -32,3 +40,5 @@ theme = auto
 # toast_bg  = cyan
 # error_fg  = bright-white
 # error_bg  = red
+# bell_fg   = bright-red      # the ! mark
+# unseen_fg = yellow          # the ● mark

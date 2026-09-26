@@ -1,4 +1,4 @@
-module github.com/r-usmanov/thlmulti
+module github.com/haosb/thlmulti
 
 go 1.27.0
 

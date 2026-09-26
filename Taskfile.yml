@@ -15,10 +15,13 @@ tasks:
 
   build:
     desc: Build ./thlmulti
-    sources: ["*.go", "go.mod", "go.sum"]
+    sources: ["**/*.go", "go.mod", "go.sum"]
     generates: ["{{.BIN}}"]
+    # Static, so a release built on a new distro runs on an old glibc.
+    env:
+      CGO_ENABLED: "0"
     cmds:
-      - go build -trimpath -ldflags "-s -w" -o {{.BIN}} .
+      - go build -trimpath -ldflags "-s -w" -o {{.BIN}} ./cmd/thlmulti
 
   run:
     desc: Build and run it in this terminal
@@ -34,9 +37,15 @@ tasks:
   check:
     desc: Format, vet and test
     cmds:
-      - gofmt -l .
+      # gofmt -l exits 0 whatever it finds, so fail on its output instead.
+      - test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
       - go vet ./...
       - go test ./...
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
 
   tidy:
     desc: Tidy go.mod

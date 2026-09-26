@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -27,6 +27,8 @@ type Theme struct {
 	ActiveFg, ActiveBg vaxis.Color // the tab in front
 	ToastFg, ToastBg   vaxis.Color // "Copied to clipboard"
 	ErrorFg, ErrorBg   vaxis.Color // a failed action
+	BellFg             vaxis.Color // the mark on a tab that rang its bell
+	UnseenFg           vaxis.Color // the mark on a tab with output not yet seen
 }
 
 func darkTheme() Theme {
@@ -35,6 +37,8 @@ func darkTheme() Theme {
 		ActiveFg: vaxis.IndexColor(0), ActiveBg: vaxis.IndexColor(7),
 		ToastFg: vaxis.IndexColor(0), ToastBg: vaxis.IndexColor(6),
 		ErrorFg: vaxis.IndexColor(15), ErrorBg: vaxis.IndexColor(1),
+		BellFg:   vaxis.IndexColor(9),
+		UnseenFg: vaxis.IndexColor(3),
 	}
 }
 
@@ -44,6 +48,8 @@ func lightTheme() Theme {
 		ActiveFg: vaxis.IndexColor(15), ActiveBg: vaxis.IndexColor(0),
 		ToastFg: vaxis.IndexColor(15), ToastBg: vaxis.IndexColor(4),
 		ErrorFg: vaxis.IndexColor(15), ErrorBg: vaxis.IndexColor(1),
+		BellFg:   vaxis.IndexColor(1),
+		UnseenFg: vaxis.IndexColor(4),
 	}
 }
 
@@ -59,11 +65,13 @@ var themeSlots = map[string]func(*Theme) *vaxis.Color{
 	"toast_bg":  func(t *Theme) *vaxis.Color { return &t.ToastBg },
 	"error_fg":  func(t *Theme) *vaxis.Color { return &t.ErrorFg },
 	"error_bg":  func(t *Theme) *vaxis.Color { return &t.ErrorBg },
+	"bell_fg":   func(t *Theme) *vaxis.Color { return &t.BellFg },
+	"unseen_fg": func(t *Theme) *vaxis.Color { return &t.UnseenFg },
 }
 
-// theme builds the palette for mode and paints the configured overrides on top.
+// Palette builds the palette for mode and paints the configured overrides on top.
 // mode is the resolved one: ThemeAuto never reaches here.
-func (c Config) theme(mode ThemeMode) Theme {
+func (c Config) Palette(mode ThemeMode) Theme {
 	t := darkTheme()
 	if mode == ThemeLight {
 		t = lightTheme()
@@ -76,26 +84,30 @@ func (c Config) theme(mode ThemeMode) Theme {
 	return t
 }
 
-func (t Theme) tab() vaxis.Style {
+// Tab is the style of the tabs behind, the separators and the rule.
+func (t Theme) Tab() vaxis.Style {
 	return vaxis.Style{Foreground: t.TabFg, Background: t.TabBg}
 }
 
-func (t Theme) active() vaxis.Style {
+// Active is the style of the tab in front.
+func (t Theme) Active() vaxis.Style {
 	return vaxis.Style{Foreground: t.ActiveFg, Background: t.ActiveBg}
 }
 
-func (t Theme) toast() vaxis.Style {
+// Toast is the style of a passing message, and of the rename prompt.
+func (t Theme) Toast() vaxis.Style {
 	return vaxis.Style{Foreground: t.ToastFg, Background: t.ToastBg}
 }
 
-func (t Theme) failure() vaxis.Style {
+// Failure is the style of the message saying why an action failed.
+func (t Theme) Failure() vaxis.Style {
 	return vaxis.Style{Foreground: t.ErrorFg, Background: t.ErrorBg}
 }
 
-// modeForBackground reads the host's background colour and says which palette
+// ModeForBackground reads the host's background colour and says which palette
 // belongs on it. The second result is false when the colour tells us nothing,
 // which is what a terminal that will not answer the query looks like.
-func modeForBackground(c vaxis.Color) (ThemeMode, bool) {
+func ModeForBackground(c vaxis.Color) (ThemeMode, bool) {
 	rgb := c.Params()
 	if len(rgb) != 3 {
 		return ThemeAuto, false

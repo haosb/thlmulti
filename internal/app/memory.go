@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"runtime/debug"
@@ -12,8 +12,8 @@ import (
 // spends it twice.
 //
 // Once on the history itself: widgets/term keeps whole rows at full width,
-// bytesPerCell each (see scrollback.go), in pages of 64 rows that are allocated
-// and thrown away as the history slides. Twenty thousand lines at 200 columns
+// scrollback.BytesPerCell each, in pages of 64 rows that are allocated and
+// thrown away as the history slides. Twenty thousand lines at 200 columns
 // is 350 MB of live cells, and there is nothing to be done about that from out
 // here — it is the emulator's data structure.
 //
@@ -71,7 +71,7 @@ type reclaimer struct {
 
 func newReclaimer(vx *vaxis.Vaxis) *reclaimer {
 	return &reclaimer{
-		arm:   func() { time.AfterFunc(idleReclaim, func() { vx.PostEvent(reclaimMemory{}) }) },
+		arm:   func() { postAfter(vx, idleReclaim, reclaimMemory{}) },
 		churn: heapChurn,
 		free:  debug.FreeOSMemory,
 	}

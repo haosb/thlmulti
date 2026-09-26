@@ -1,4 +1,6 @@
-package main
+// Package terminfo picks a TERM for child processes that the system can
+// actually describe.
+package terminfo
 
 import (
 	"fmt"
@@ -6,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-// childTERM picks the TERM handed to child processes.
+// ChildTERM picks the TERM handed to child processes.
 //
 // widgets/term defaults this to xterm-kitty whenever the host speaks the Kitty
 // keyboard protocol, which Alacritty does. But that terminfo entry ships with
@@ -14,16 +16,16 @@ import (
 // entry is far worse than a less capable one: zsh's line editor then redraws
 // blind. The prompt renders as blank spaces and every backspace leaves another
 // fragment on screen, one column further right than the last.
-func childTERM() string {
-	if hasTerminfo("xterm-kitty") {
+func ChildTERM() string {
+	if exists("xterm-kitty") {
 		return "xterm-kitty"
 	}
 	return "xterm-256color"
 }
 
-// hasTerminfo reports whether an entry for name exists, searching where ncurses
+// exists reports whether an entry for name exists, searching where ncurses
 // searches.
-func hasTerminfo(name string) bool {
+func exists(name string) bool {
 	if name == "" {
 		return false
 	}
