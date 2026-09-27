@@ -38,6 +38,9 @@ type tab struct {
 	// bell means the tab rang, or sent a notification, while it was not in
 	// front or while the window was not focused.
 	bell bool
+	// blurred means the tab was just sent behind, and the redraw that causes
+	// — its cursor going out — has not arrived yet. That redraw is not output.
+	blurred bool
 }
 
 // label is what the bar prints for the tab: the name given by hand, else the
@@ -149,7 +152,7 @@ func (a *app) openTab() error {
 	}
 
 	if len(a.tabs) > 0 {
-		a.current().input.push(vaxis.FocusOut{})
+		a.sendBehind(a.current())
 	}
 	a.tabs = append(a.tabs, t)
 	a.active = len(a.tabs) - 1
@@ -177,7 +180,7 @@ func (a *app) applyInput(t *tab, ev vaxis.Event) {
 // it wanted you for, you are looking at it now.
 func (a *app) focusCurrent() {
 	t := a.current()
-	t.unseen, t.bell = false, false
+	t.unseen, t.bell, t.blurred = false, false, false
 	t.input.push(vaxis.FocusIn{})
 	a.dirty = true
 }
@@ -186,9 +189,15 @@ func (a *app) selectTab(i int) {
 	if i < 0 || i >= len(a.tabs) || i == a.active {
 		return
 	}
-	a.current().input.push(vaxis.FocusOut{})
+	a.sendBehind(a.current())
 	a.active = i
 	a.focusCurrent()
+}
+
+// sendBehind tells the tab in front that it no longer is.
+func (a *app) sendBehind(t *tab) {
+	t.input.push(vaxis.FocusOut{})
+	t.blurred = true
 }
 
 // wrap brings a position back onto the bar from either end.
@@ -361,12 +370,20 @@ func (a *app) handleTabEvent(ev tabEvent) bool {
 			a.dirty = true
 		}
 	case vaxis.Redraw:
-		// The emulator reports this once per burst of output and not again
-		// until it has been drawn. A tab behind is not drawn, so behind it
-		// means exactly one thing: there is output you have not seen.
 		if !behind {
 			a.dirty = true
-		} else if !t.unseen {
+			break
+		}
+		// The emulator reports a redraw once and not again until it has been
+		// drawn, and nothing draws a tab behind. So draw it nowhere, or the
+		// first redraw behind would be the last, and it is usually not even
+		// output: it is the tab hiding its cursor for the blur it was sent.
+		t.vt.Draw(a.vx.Window().New(0, 0, 0, 0))
+		if t.blurred {
+			t.blurred = false
+			break
+		}
+		if !t.unseen {
 			t.unseen = true
 			a.dirty = true
 		}

@@ -2,7 +2,7 @@
 
 Tabs for your terminal. Not tmux. Not zellij. ~2000 lines of Go.
 
-![Three tabs, switching by number and by mouse, and a selection copied to the clipboard](docs/demo.gif)
+![Three tabs marking a running job, a bell and unseen output; jumping to the tab that wants you; copy by drag, paste, rename, move, and a close that asks first](docs/demo.gif)
 
 Mac Alacritty does `Ctrl+T` — new tab, same window. Linux Alacritty does not.
 Zellij does, but zellij is a whole world, and its mouse wheel stops scrolling

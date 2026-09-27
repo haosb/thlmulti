@@ -7,7 +7,9 @@ import (
 )
 
 func (a *app) handleKey(k vaxis.Key) {
-	if a.status != "" {
+	// Anything but a release clears the message: a release is the tail of
+	// the chord that may have just put it there.
+	if a.status != "" && k.EventType != vaxis.EventRelease {
 		a.status = ""
 		a.dirty = true
 	}

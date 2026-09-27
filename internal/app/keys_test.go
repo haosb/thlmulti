@@ -102,3 +102,26 @@ func TestTabLabel(t *testing.T) {
 		t.Errorf("clearing the name did not hand the label back to the title: %q", tb.label())
 	}
 }
+
+// A message in the bar stays until you do something. Letting go of the chord
+// that caused it is not doing something: under the Kitty keyboard protocol
+// every release arrives as a key of its own, modifiers included, and clearing
+// on those took the message down before it was ever drawn.
+func TestStatusOutlivesTheRelease(t *testing.T) {
+	a := &app{cfg: config.Default()}
+	a.tabs = []*tab{testTab(a)}
+	a.status = "tab 1 is running a job"
+	for _, k := range []vaxis.Key{
+		{Keycode: 'w', Modifiers: vaxis.ModCtrl | vaxis.ModShift, EventType: vaxis.EventRelease},
+		{Keycode: vaxis.KeyLeftShift, EventType: vaxis.EventRelease},
+	} {
+		a.handleKey(k)
+		if a.status == "" {
+			t.Fatalf("releasing %+v cleared the message", k)
+		}
+	}
+	a.handleKey(key('x', 0))
+	if a.status != "" {
+		t.Error("a keypress left the message up")
+	}
+}
